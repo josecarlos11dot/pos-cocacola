@@ -1,0 +1,94 @@
+/* ===== Estilos base ===== */
+:root{--gap:12px;--radius:14px}
+*{box-sizing:border-box}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;margin:0;background:#0f172a;color:#e2e8f0}
+header{padding:20px;border-bottom:1px solid #1f2a44;background:#111827;position:sticky;top:0}
+header h1{margin:0;font-size:18px}
+
+main{
+  padding:20px;
+  display:grid;
+  gap:var(--gap);
+  grid-template-columns:1fr 1fr;
+}
+
+/* Venta principal ocupa todo el ancho en desktop */
+.venta-principal{
+  grid-column:1 / -1;
+  border:2px solid #2563eb;
+}
+
+.card{background:#0b1220;border:1px solid #1f2a44;border-radius:var(--radius);padding:16px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+h2{margin:.2rem 0 1rem;font-size:16px}
+.row{display:grid;gap:8px;grid-template-columns:1fr 1fr;margin-bottom:8px}
+.field label{font-size:12px;color:#94a3b8;display:block;margin-bottom:6px}
+select,input,button{width:100%;padding:10px;border-radius:10px;border:1px solid #233252;background:#0a1020;color:#e5e7eb}
+input[type="number"]{appearance:textfield}
+button{cursor:pointer}
+button.primary{background:#2563eb;border-color:#2563eb}
+button.warn{background:#f59e0b;border-color:#f59e0b}
+button.ghost{background:transparent}
+button.danger{border-color:#7f1d1d;color:#fecaca}
+table{width:100%;border-collapse:collapse}
+th,td{padding:8px;border-bottom:1px solid #1f2a44;text-align:left;font-size:13px}
+th{color:#93c5fd}
+.header-line{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.muted{color:#94a3b8;font-size:12px}
+footer{padding:20px;text-align:center;color:#94a3b8}
+@media (max-width: 1140px){
+  main{grid-template-columns:1fr}
+}
+
+/* Totales inventario */
+tr.total-row{background:#1e293b;color:#facc15;font-weight:bold}
+
+/* ===== KPIs ventas ===== */
+.ventas-resumen{
+  display:flex; gap:12px; flex-wrap:wrap; margin-top:10px; margin-bottom:8px;
+}
+.kpi{
+  background:#0a1020; border:1px solid #1f2a44; border-radius:12px; padding:10px 14px; min-width:180px;
+}
+.kpi-label{ font-size:12px; color:#94a3b8; }
+.kpi-value{ font-size:20px; font-weight:700; margin-top:4px; }
+
+.tabla-compacta th, .tabla-compacta td{ padding:6px 8px; font-size:12.5px; }
+
+/* ===== Modal (Ingreso rápido) ===== */
+.modal.hidden { display: none; }
+.modal {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.5);
+  display: grid; place-items: center;
+}
+.modal__dialog {
+  width: min(720px, 92vw);
+  background: #0b1220;
+  border: 1px solid #1f2a44;
+  border-radius: 14px;
+  box-shadow: 0 6px 28px rgba(0,0,0,.45);
+  padding: 12px 12px 16px;
+}
+.modal__header, .modal__footer {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
+.modal__header h3 { margin: 6px 0 6px; }
+.modal__body { margin: 8px 0 12px; }
+.modal__footer { margin-top: 6px; }
+
+input:disabled { opacity: 0.8; }
+.segmented{display:flex;gap:12px}
+.mode-sale-outline { outline: 2px solid #f59e0b33; outline-offset: 2px; }
+
+/* ===== Cámara ===== */
+.cam-controls{
+  display:grid; grid-template-columns: 1fr auto auto; gap:10px; align-items:end; margin-bottom:8px;
+}
+.cam-buttons{ display:flex; gap:8px; }
+.cam-status{ display:flex; align-items:center; }
+.cam-preview{
+  display:grid; place-items:center; background:#0a1020; border:1px dashed #1f2a44; border-radius:12px; padding:8px; margin-bottom:10px;
+}
+video{
+  max-width:100%; width:100%; height:auto; border-radius:10px; background:#000;
+}

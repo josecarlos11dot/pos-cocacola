@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>POS Coca-Cola — Ventas + Ingreso (Unidad/Lote) + Cámara</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>POS Coca-Cola</h1>
+    <p class="muted">Ventas por escaneo (lector o cámara). Ingreso rápido (F2) con Unidad/Lote y alta rápida.</p>
+  </header>
+
+  <main>
+    <!-- ===== 1) Ventas (principal, ancho completo) ===== -->
+    <section class="card venta-principal" id="seccionVentas">
+      <div class="header-line">
+        <h2>🧾 Venta por escaneo</h2>
+        <div class="toolbar">
+          <button id="btnIngresoRapido" class="primary" title="F2">+ Ingreso rápido (F2)</button>
+          <button id="btnUndo" class="ghost" title="Ctrl+Z">↩ Deshacer último</button>
+        </div>
+      </div>
+
+      <!-- Controles de cámara (Ventas) -->
+      <div class="cam-controls">
+        <div class="field">
+          <label>Cámara</label>
+          <select id="ventaCamSelect"></select>
+        </div>
+        <div class="cam-buttons">
+          <button id="ventaCamStart" class="ghost">Usar cámara</button>
+          <button id="ventaCamStop" class="ghost">Detener</button>
+          <button id="ventaTorch" class="ghost" title="Linterna">🔦</button>
+        </div>
+        <div class="cam-status">
+          <span id="ventaCamStatus" class="muted">Cámara inactiva</span>
+        </div>
+      </div>
+      <div class="cam-preview">
+        <video id="ventaVideo" muted playsinline></video>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>Escáner / Código detectado</label>
+          <input id="ventaScan" type="text" placeholder="Escanea aquí y Enter para vender 1 unidad">
+        </div>
+        <div class="field">
+          <label>Último producto vendido</label>
+          <input id="ventaUltimo" type="text" disabled>
+        </div>
+      </div>
+      <p class="muted">Si el código no existe, se avisará. No se dan de alta productos desde venta para evitar errores.</p>
+
+      <!-- Resumen de ventas (hoy) -->
+      <div class="ventas-resumen">
+        <div class="kpi">
+          <div class="kpi-label">Artículos vendidos (hoy)</div>
+          <div class="kpi-value" id="kpiVentasUnidades">0</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Total vendido (hoy)</div>
+          <div class="kpi-value" id="kpiVentasTotal">$0.00</div>
+        </div>
+      </div>
+
+      <table id="tablaVentasHoy" class="tabla-compacta">
+        <thead>
+          <tr>
+            <th>Hora</th>
+            <th>Producto</th>
+            <th>Unid.</th>
+            <th>Precio</th>
+            <th>Subtotal</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- ===== 2) Catálogo ===== -->
+    <section class="card" id="seccionCatalogo">
+      <div class="header-line">
+        <h2>🗂️ Catálogo</h2>
+        <div class="toolbar">
+          <button id="btnAgregarProducto" class="ghost">+ Producto</button>
+          <button id="btnGuardarCatalogo" class="primary">Guardar catálogo</button>
+        </div>
+      </div>
+      <table id="tablaCatalogo">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Unid./paquete</th>
+            <th>Precio</th>
+            <th>Código de barras (unidad)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p class="muted">Rellena/ajusta el código de barras de la botella (unidad). Ej.: EAN-13/UPC.</p>
+    </section>
+
+    <!-- ===== 3) Inventario ===== -->
+    <section class="card" id="seccionInventario">
+      <div class="header-line">
+        <h2>📊 Inventario actual</h2>
+        <div class="toolbar">
+          <button id="btnRecalcular" class="ghost">Recalcular</button>
+          <button id="btnResetear" class="ghost danger" title="Borrar datos locales (solo desarrollo)">Reset local</button>
+        </div>
+      </div>
+      <table id="tablaInventario">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Unid./paquete</th>
+            <th>Stock (unid.)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p class="muted">El inventario se calcula como total Entradas − total Salidas, por producto.</p>
+    </section>
+
+    <!-- ===== 4) Movimientos ===== -->
+    <section class="card" id="seccionMovimientos">
+      <h2>📜 Movimientos recientes</h2>
+      <table id="tablaMovimientos">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Producto</th>
+            <th>Cant. (unid.)</th>
+            <th>Nota</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <!-- ===== Modal: Ingreso rápido (F2) ===== -->
+  <div id="modalIngreso" class="modal hidden" aria-hidden="true">
+    <div class="modal__dialog">
+      <div class="modal__header">
+        <h3>📥 Ingreso rápido por escaneo</h3>
+        <button id="modalIngresoCerrar" class="ghost" title="Esc">✕</button>
+      </div>
+
+      <div class="modal__body">
+        <p class="muted">Escanea una botella para sumarla al inventario. Si el código no existe, se dará de alta en el catálogo.</p>
+
+        <!-- Controles de cámara (Ingreso) -->
+        <div class="cam-controls">
+          <div class="field">
+            <label>Cámara</label>
+            <select id="ingresoCamSelect"></select>
+          </div>
+          <div class="cam-buttons">
+            <button id="ingresoCamStart" class="ghost">Usar cámara</button>
+            <button id="ingresoCamStop" class="ghost">Detener</button>
+            <button id="ingresoTorch" class="ghost" title="Linterna">🔦</button>
+          </div>
+          <div class="cam-status">
+            <span id="ingresoCamStatus" class="muted">Cámara inactiva</span>
+          </div>
+        </div>
+        <div class="cam-preview">
+          <video id="ingresoVideo" muted playsinline></video>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label>Modo</label>
+            <div class="segmented">
+              <label><input type="radio" name="modoIngreso" value="unidad" checked> Unidad</label>
+              <label><input type="radio" name="modoIngreso" value="lote"> Lote</label>
+            </div>
+          </div>
+          <div class="field" id="fieldCantidadLote" style="display:none;">
+            <label>Cantidad (para lote)</label>
+            <input id="modalCantidadLote" type="number" min="1" value="12">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label>Escáner / Código detectado</label>
+            <input id="modalIngresoScan" type="text" placeholder="Escanea aquí y Enter para registrar">
+          </div>
+          <div class="field">
+            <label>Unidades capturadas en esta sesión</label>
+            <input id="modalIngresoContador" type="text" disabled value="0">
+          </div>
+        </div>
+      </div>
+
+      <div class="modal__footer">
+        <button id="modalIngresoTerminar" class="warn" title="Esc">Terminar ingreso (Esc)</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <small class="muted">Versión con cámara. Próximo: corte de día, alertas de stock y exportación.</small>
+  </footer>
+
+  <!-- ZXing -->
+  <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
+  <script src="app.js"></script>
+</body>
+</html>
