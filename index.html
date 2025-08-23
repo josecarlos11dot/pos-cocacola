@@ -3,56 +3,57 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>POS Coca-Cola — Ventas + Ingreso (Unidad/Lote) + Cámara</title>
+  <title>POS Coca-Cola — Ventas con Mosaico</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header>
     <h1>POS Coca-Cola</h1>
-    <p class="muted">Ventas por escaneo (lector o cámara). Ingreso rápido (F2) con Unidad/Lote y alta rápida.</p>
+    <p class="muted">Ventas por mosaico (click/touch), ingreso rápido (F2), escáner opcional.</p>
   </header>
 
   <main>
     <!-- ===== 1) Ventas (principal, ancho completo) ===== -->
     <section class="card venta-principal" id="seccionVentas">
       <div class="header-line">
-        <h2>🧾 Venta por escaneo</h2>
+        <h2>🧾 Ventas</h2>
         <div class="toolbar">
           <button id="btnIngresoRapido" class="primary" title="F2">+ Ingreso rápido (F2)</button>
           <button id="btnUndo" class="ghost" title="Ctrl+Z">↩ Deshacer último</button>
         </div>
       </div>
 
-      <!-- Controles de cámara (Ventas) -->
-      <div class="cam-controls">
+      <!-- Controles de búsqueda y vista -->
+      <div class="venta-controls">
         <div class="field">
-          <label>Cámara</label>
-          <select id="ventaCamSelect"></select>
+          <label>Buscar producto</label>
+          <input id="ventaBuscar" type="text" placeholder="Ej. coca, sprite, agua…">
         </div>
-        <div class="cam-buttons">
-          <button id="ventaCamStart" class="ghost">Usar cámara</button>
-          <button id="ventaCamStop" class="ghost">Detener</button>
-          <button id="ventaTorch" class="ghost" title="Linterna">🔦</button>
+        <div class="field small">
+          <label>&nbsp;</label>
+          <button id="btnClearSearch" class="ghost">Limpiar</button>
         </div>
-        <div class="cam-status">
-          <span id="ventaCamStatus" class="muted">Cámara inactiva</span>
-        </div>
-      </div>
-      <div class="cam-preview">
-        <video id="ventaVideo" muted playsinline></video>
       </div>
 
-      <div class="row">
+      <!-- Mosaico interactivo -->
+      <div id="ventaMosaico" class="grid-mosaic"></div>
+
+      <!-- (opcional) Entrada por escáner físico -->
+      <div class="row" style="margin-top:10px">
         <div class="field">
-          <label>Escáner / Código detectado</label>
-          <input id="ventaScan" type="text" placeholder="Escanea aquí y Enter para vender 1 unidad">
+          <label>Escáner / Código detectado (opcional)</label>
+          <input id="ventaScan" type="text" autocomplete="off" placeholder="Escanea aquí y Enter para vender 1">
         </div>
         <div class="field">
           <label>Último producto vendido</label>
           <input id="ventaUltimo" type="text" disabled>
         </div>
       </div>
-      <p class="muted">Si el código no existe, se avisará. No se dan de alta productos desde venta para evitar errores.</p>
+
+      <p class="muted">
+        Tip: click/touch = vende 1 • <b>Alt+click</b> / <b>mantener presionado</b> = cantidad personalizada •
+        Si no hay stock, el tile vibra.
+      </p>
 
       <!-- Resumen de ventas (hoy) -->
       <div class="ventas-resumen">
@@ -95,13 +96,15 @@
             <th>Nombre</th>
             <th>Unid./paquete</th>
             <th>Precio</th>
-            <th>Código de barras (unidad)</th>
+            <th>Código (unidad)</th>
+            <th>Color</th>
+            <th>Emoji</th>
             <th></th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
-      <p class="muted">Rellena/ajusta el código de barras de la botella (unidad). Ej.: EAN-13/UPC.</p>
+      <p class="muted">Los campos <b>Color</b> y <b>Emoji</b> dan estilo a los mosaicos. Puedes dejarlos vacíos.</p>
     </section>
 
     <!-- ===== 3) Inventario ===== -->
@@ -123,7 +126,7 @@
         </thead>
         <tbody></tbody>
       </table>
-      <p class="muted">El inventario se calcula como total Entradas − total Salidas, por producto.</p>
+      <p class="muted">El inventario = Entradas − Salidas.</p>
     </section>
 
     <!-- ===== 4) Movimientos ===== -->
@@ -151,29 +154,8 @@
         <h3>📥 Ingreso rápido por escaneo</h3>
         <button id="modalIngresoCerrar" class="ghost" title="Esc">✕</button>
       </div>
-
       <div class="modal__body">
-        <p class="muted">Escanea una botella para sumarla al inventario. Si el código no existe, se dará de alta en el catálogo.</p>
-
-        <!-- Controles de cámara (Ingreso) -->
-        <div class="cam-controls">
-          <div class="field">
-            <label>Cámara</label>
-            <select id="ingresoCamSelect"></select>
-          </div>
-          <div class="cam-buttons">
-            <button id="ingresoCamStart" class="ghost">Usar cámara</button>
-            <button id="ingresoCamStop" class="ghost">Detener</button>
-            <button id="ingresoTorch" class="ghost" title="Linterna">🔦</button>
-          </div>
-          <div class="cam-status">
-            <span id="ingresoCamStatus" class="muted">Cámara inactiva</span>
-          </div>
-        </div>
-        <div class="cam-preview">
-          <video id="ingresoVideo" muted playsinline></video>
-        </div>
-
+        <p class="muted">Escanea una botella para sumarla al inventario. Si el código no existe, se dará de alta.</p>
         <div class="row">
           <div class="field">
             <label>Modo</label>
@@ -187,7 +169,6 @@
             <input id="modalCantidadLote" type="number" min="1" value="12">
           </div>
         </div>
-
         <div class="row">
           <div class="field">
             <label>Escáner / Código detectado</label>
@@ -199,7 +180,6 @@
           </div>
         </div>
       </div>
-
       <div class="modal__footer">
         <button id="modalIngresoTerminar" class="warn" title="Esc">Terminar ingreso (Esc)</button>
       </div>
@@ -207,11 +187,9 @@
   </div>
 
   <footer>
-    <small class="muted">Versión con cámara. Próximo: corte de día, alertas de stock y exportación.</small>
+    <small class="muted">Mosaico de ventas interactivo listo. Próximo: categorías, combos y descuentos rápidos.</small>
   </footer>
 
-  <!-- ZXing -->
-  <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
   <script src="app.js"></script>
 </body>
 </html>
