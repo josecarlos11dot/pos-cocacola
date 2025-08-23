@@ -15,17 +15,27 @@ let STATE = seedSiHaceFalta();
 let ULTIMO_MOV = null;
 let lastScanTs = 0;
 
-/* ===== Orden actual (carrito) ===== */
-let ORDER = []; // [{productoId, qty, price}]
+/* ===== Carrito (orden) ===== */
+let ORDER = []; // cada línea: { productoId, qty, price }
+
 function findOrderLine(pid){ return ORDER.find(l => l.productoId === pid) || null; }
 function qtyInOrder(pid){ return findOrderLine(pid)?.qty || 0; }
+
+// stock disponible descontando lo ya agregado al carrito
 function availableFor(pid){
   const stock = calcularStockPorProducto();
-  return Math.max(0, (stock[pid]||0) - qtyInOrder(pid));
+  return Math.max(0, (stock[pid] || 0) - qtyInOrder(pid));
 }
+
+// TOTAL de la orden (artículos y $)
 function orderTotal(){
-  let items=0, total=0;
-  for(const l of ORDER){ items += l.qty; total += (l.qty * (Number(l.price)||0)); }
+  let items = 0, total = 0;
+  for (const l of ORDER){
+    const p = getProducto(l.productoId);
+    const price = Number(l.price ?? p?.precio ?? 0);
+    items += l.qty;
+    total += price * l.qty;
+  }
   return { items, total: +total.toFixed(2) };
 }
 
@@ -90,7 +100,6 @@ function renderCatalogo(){
     if(field==="unidadesPorPaquete"){ prod[field] = Math.max(1, parseInt(el.value,10) || 1); }
     else if(field==="precio"){ prod[field] = Math.max(0, parseFloat(el.value)||0); }
     else { prod[field] = el.value; }
-    // Refrescar mosaico si cambian nombre/precio/color/emoji
     if (["nombre","precio","color","emoji"].includes(field)) renderMosaicoVentas();
   });
   tbody.addEventListener("click", e=>{
@@ -409,6 +418,55 @@ function renderOrderPanel(){
   };
 }
 
+/* ===== Acciones de la orden ===== */
+function clearOrder() {
+  if (ORDER.length === 0) return;
+  if (confirm("¿Vaciar la orden actual?")) {
+    ORDER = [];
+    renderOrderPanel();
+    renderMosaicoVentas();
+  }
+}
+function cancelOrder() {
+  if (ORDER.length === 0) return;
+  if (confirm("¿Cancelar la orden? Se perderán los items seleccionados.")) {
+    ORDER = [];
+    renderOrderPanel();
+    renderMosaicoVentas();
+  }
+}
+function checkoutOrder() {
+  if (ORDER.length === 0) { alert("La orden está vacía."); return; }
+
+  // Validar stock antes de descontar
+  const stock = calcularStockPorProducto();
+  for (const l of ORDER) {
+    const disponible = stock[l.productoId] ?? 0;
+    if (disponible < l.qty) {
+      const p = getProducto(l.productoId);
+      alert(`Stock insuficiente para ${p?.nombre || l.productoId}. Disponible: ${disponible}, pedido: ${l.qty}`);
+      return;
+    }
+  }
+
+  // Registrar salidas
+  for (const l of ORDER) {
+    registrarMovimiento({
+      tipo: "salida",
+      productoId: l.productoId,
+      cantidadUnidades: l.qty,
+      nota: "Venta (orden)"
+    });
+  }
+
+  const { items, total } = orderTotal();
+  alert(`Orden cerrada.\nArtículos: ${items}\nTotal: ${formMXN(total)}`);
+
+  ORDER = [];
+  renderOrderPanel();
+  renderMosaicoVentas();
+}
+
 /* ===== Escáner físico (agrega al carrito) ===== */
 function procesarVentaScan(codeOverride=null){
   if(!cooldownOk()) return;
@@ -438,6 +496,11 @@ function wireEvents(){
   setInterval(()=>{ const el=document.getElementById("ventaScan"); if(document.activeElement!==el && !el.disabled) el.focus(); }, 2000);
 
   document.getElementById("btnUndo").addEventListener("click", deshacerUltimoMovimiento);
+
+  // Botones de la orden
+  document.getElementById("btnOrderClear").addEventListener("click", clearOrder);
+  document.getElementById("btnOrderCancel").addEventListener("click", cancelOrder);
+  document.getElementById("btnOrderCheckout").addEventListener("click", checkoutOrder);
 
   // Catálogo
   document.getElementById("btnAgregarProducto").addEventListener("click", ()=>{
