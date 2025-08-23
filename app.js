@@ -522,26 +522,77 @@ function procesarVentaScan(codeOverride=null){
   renderOrderPanel(); renderMosaicoVentas();
   beep(true);
 }
-
 /* ===== Listeners ===== */
-// Ingreso manual (F2)
-document.getElementById("btnIngresoRapido").addEventListener("click", abrirModalIngreso);
-document.getElementById("modalIngresoCerrar").addEventListener("click", cerrarModalIngreso);
-document.getElementById("modalIngresoTerminar").addEventListener("click", cerrarModalIngreso);
-document.querySelectorAll('input[name="modoIngreso"]').forEach(r=> r.addEventListener("change", toggleModoLoteUI));
-document.getElementById("modalIngresoAgregar").addEventListener("click", procesarIngresoManual);
+function wireEvents(){
+  // === Venta (escáner físico opcional)
+  const ventaScan = document.getElementById("ventaScan");
+  if (ventaScan) {
+    ventaScan.addEventListener("keydown", (e)=>{ if(e.key==="Enter") procesarVentaScan(); });
+    // Re-enfocar para lectores
+    setInterval(()=>{ if(document.activeElement!==ventaScan && !ventaScan.disabled) ventaScan.focus(); }, 2000);
+  }
 
-// Enter en cantidad (cuando está habilitada)
-document.getElementById("modalCantidad").addEventListener("keydown", (e)=>{
-  if(e.key === "Enter") procesarIngresoManual();
-});
+  // === Deshacer último
+  document.getElementById("btnUndo")?.addEventListener("click", deshacerUltimoMovimiento);
 
-// Atajos: F2 abre, Esc cierra si está abierto
-document.addEventListener("keydown",(e)=>{
-  const modalAbierto = !document.getElementById("modalIngreso").classList.contains("hidden");
-  if(e.key==="F2" && !modalAbierto){ e.preventDefault(); abrirModalIngreso(); }
-  if(e.key==="Escape" && modalAbierto){ e.preventDefault(); cerrarModalIngreso(); }
-});
+  // === Orden (carrito)
+  document.getElementById("btnOrderClear")?.addEventListener("click", clearOrder);
+  document.getElementById("btnOrderCancel")?.addEventListener("click", cancelOrder);
+  document.getElementById("btnOrderCheckout")?.addEventListener("click", checkoutOrder);
+
+  // === Catálogo
+  document.getElementById("btnAgregarProducto")?.addEventListener("click", ()=>{
+    const nuevo={ id:"prod_"+crypto.randomUUID().slice(0,8), nombre:"Nuevo producto", unidadesPorPaquete:12, codigoBarrasUnidad:"", precio:0, color:"#374151", emoji:"🧃" };
+    STATE.catalogo.push(nuevo); guardarEstado(STATE); renderCatalogo(); renderMosaicoVentas();
+  });
+  document.getElementById("btnGuardarCatalogo")?.addEventListener("click", ()=>{
+    guardarEstado(STATE); alert("Catálogo guardado."); renderInventario(); renderMosaicoVentas();
+  });
+
+  // === Inventario
+  document.getElementById("btnRecalcular")?.addEventListener("click", ()=>{ renderInventario(); alert("Recalculado."); });
+  document.getElementById("btnResetear")?.addEventListener("click", ()=>{
+    if(confirm("Esto borrará los datos locales. ¿Continuar?")){
+      localStorage.removeItem(LS_KEY); location.reload();
+    }
+  });
+
+  // === Ingreso manual (F2)
+  document.getElementById("btnIngresoRapido")?.addEventListener("click", abrirModalIngreso);
+  document.getElementById("modalIngresoCerrar")?.addEventListener("click", cerrarModalIngreso);
+  document.getElementById("modalIngresoTerminar")?.addEventListener("click", cerrarModalIngreso);
+  document.getElementById("modalIngresoAgregar")?.addEventListener("click", procesarIngresoManual);
+  document.querySelectorAll('input[name="modoIngreso"]').forEach(r=> r.addEventListener("change", toggleModoLoteUI));
+  document.getElementById("modalCantidad")?.addEventListener("keydown", (e)=>{ if(e.key==="Enter") procesarIngresoManual(); });
+
+  // === Búsqueda mosaico
+  document.getElementById("ventaBuscar")?.addEventListener("input", renderMosaicoVentas);
+  document.getElementById("btnClearSearch")?.addEventListener("click", ()=>{
+    const b=document.getElementById("ventaBuscar"); if(b){ b.value=""; renderMosaicoVentas(); }
+  });
+
+  // === Anular venta desde Resumen (si implementaste el botón 🗑️)
+  const ventasTbody = document.querySelector("#tablaVentasHoy tbody");
+  if (ventasTbody) {
+    ventasTbody.addEventListener("click", (e)=>{
+      const btn = e.target.closest("button[data-action='void-sale']");
+      if (!btn) return;
+      const id = btn.getAttribute("data-id");
+      anularVenta(id);
+    });
+  }
+
+  // === Atajos globales
+  document.addEventListener("keydown",(e)=>{
+    const modalAbierto = !document.getElementById("modalIngreso").classList.contains("hidden");
+    if(e.key==="F2" && !modalAbierto){ e.preventDefault(); abrirModalIngreso(); }
+    if(e.key==="Escape" && modalAbierto){ e.preventDefault(); cerrarModalIngreso(); }
+    if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="z"){ e.preventDefault(); deshacerUltimoMovimiento(); }
+  });
+}
+
+
+
 
 
 /* ===== Init ===== */
