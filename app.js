@@ -110,7 +110,21 @@ function renderCatalogo(){
       STATE.catalogo.splice(ix,1); guardarEstado(STATE); renderCatalogo(); renderInventario(); renderMosaicoVentas();
     }
   });
+  
 }
+
+function restaurarCatalogoBase(){
+  if(!confirm("Esto restaurará los productos base (Coca, Sprite, etc.) con sus colores y emojis. ¿Continuar?")) return;
+  // NO añade inventario; solo repone el catálogo
+  STATE.catalogo = JSON.parse(JSON.stringify(catalogoBase));
+  guardarEstado(STATE);
+  renderCatalogo();
+  renderInventario();
+  renderMosaicoVentas();
+  alert("Catálogo base restaurado. Ahora puedes ingresar stock en Ingreso rápido (F2).");
+}
+
+
 
 /* ===== Render: Inventario ===== */
 function renderInventario(){
@@ -525,12 +539,22 @@ function procesarVentaScan(codeOverride=null){
 /* ===== Listeners ===== */
 function wireEvents(){
   // === Venta (escáner físico opcional)
-  const ventaScan = document.getElementById("ventaScan");
-  if (ventaScan) {
-    ventaScan.addEventListener("keydown", (e)=>{ if(e.key==="Enter") procesarVentaScan(); });
-    // Re-enfocar para lectores
-    setInterval(()=>{ if(document.activeElement!==ventaScan && !ventaScan.disabled) ventaScan.focus(); }, 2000);
-  }
+ // Re-enfocar para lectores (sin molestar cuando escribes o el modal está abierto)
+const ventaScan = document.getElementById("ventaScan");
+const modal = document.getElementById("modalIngreso");
+if (ventaScan) {
+  setInterval(()=>{
+    const modalOpen = modal && !modal.classList.contains("hidden");
+    const ae = document.activeElement;
+    const typingInOther =
+      ae && ["INPUT","TEXTAREA","SELECT"].includes(ae.tagName) && ae !== ventaScan;
+
+    if (!modalOpen && !typingInOther && !ventaScan.disabled) {
+      ventaScan.focus();
+    }
+  }, 1200);
+}
+
 
   // === Deshacer último
   document.getElementById("btnUndo")?.addEventListener("click", deshacerUltimoMovimiento);
@@ -548,6 +572,7 @@ function wireEvents(){
   document.getElementById("btnGuardarCatalogo")?.addEventListener("click", ()=>{
     guardarEstado(STATE); alert("Catálogo guardado."); renderInventario(); renderMosaicoVentas();
   });
+  document.getElementById("btnRestaurarCatalogo")?.addEventListener("click", restaurarCatalogoBase);
 
   // === Inventario
   document.getElementById("btnRecalcular")?.addEventListener("click", ()=>{ renderInventario(); alert("Recalculado."); });
@@ -597,6 +622,14 @@ function wireEvents(){
 
 /* ===== Init ===== */
 function init(){
+  // Si el catálogo está vacío, ofrecer restaurarlo
+  if (!STATE.catalogo || STATE.catalogo.length === 0) {
+    if (confirm("Tu catálogo está vacío. ¿Restaurar el catálogo base ahora?")) {
+      STATE.catalogo = JSON.parse(JSON.stringify(catalogoBase));
+      guardarEstado(STATE);
+    }
+  }
+
   renderCatalogo();
   renderInventario();
   renderMovimientos();
@@ -605,4 +638,5 @@ function init(){
   renderOrderPanel();
   wireEvents();
 }
+
 document.addEventListener("DOMContentLoaded", init);
