@@ -186,44 +186,61 @@
     </section>
   </main>
 
-  <!-- ===== Modal: Ingreso rápido (F2) ===== -->
-  <div id="modalIngreso" class="modal hidden" aria-hidden="true">
-    <div class="modal__dialog">
-      <div class="modal__header">
-        <h3>📥 Ingreso rápido por escaneo</h3>
-        <button id="modalIngresoCerrar" class="ghost" title="Esc">✕</button>
-      </div>
-      <div class="modal__body">
-        <p class="muted">Escanea una botella para sumarla al inventario. Si el código no existe, se dará de alta.</p>
-        <div class="row">
-          <div class="field">
-            <label>Modo</label>
-            <div class="segmented">
-              <label><input type="radio" name="modoIngreso" value="unidad" checked> Unidad</label>
-              <label><input type="radio" name="modoIngreso" value="lote"> Lote</label>
-            </div>
-          </div>
-          <div class="field" id="fieldCantidadLote" style="display:none;">
-            <label>Cantidad (para lote)</label>
-            <input id="modalCantidadLote" type="number" min="1" value="12">
-          </div>
+<!-- ===== Modal: Ingreso rápido (F2) — SIN escáner ===== -->
+<div id="modalIngreso" class="modal hidden" aria-hidden="true">
+  <div class="modal__dialog">
+    <div class="modal__header">
+      <h3>📥 Ingreso rápido manual</h3>
+      <button id="modalIngresoCerrar" class="ghost" title="Esc">✕</button>
+    </div>
+
+    <div class="modal__body">
+      <p class="muted">Selecciona un producto y registra entradas al inventario. El precio se define en el <b>Catálogo</b>.</p>
+
+      <div class="row">
+        <div class="field">
+          <label>Producto</label>
+          <select id="modalProducto"></select>
         </div>
-        <div class="row">
-          <div class="field">
-            <label>Escáner / Código detectado</label>
-            <input id="modalIngresoScan" type="text" placeholder="Escanea aquí y Enter para registrar">
-          </div>
-          <div class="field">
-            <label>Unidades capturadas en esta sesión</label>
-            <input id="modalIngresoContador" type="text" disabled value="0">
+
+        <div class="field">
+          <label>Modo</label>
+          <div class="segmented">
+            <label><input type="radio" name="modoIngreso" value="unidad" checked> Unidad</label>
+            <label><input type="radio" name="modoIngreso" value="lote"> Lote</label>
           </div>
         </div>
       </div>
-      <div class="modal__footer">
-        <button id="modalIngresoTerminar" class="warn" title="Esc">Terminar ingreso (Esc)</button>
+
+      <div class="row">
+        <div class="field" id="fieldCantidad">
+          <label>Cantidad</label>
+          <input id="modalCantidad" type="number" min="1" value="1" disabled>
+        </div>
+
+        <div class="field">
+          <label>Nota (opcional)</label>
+          <input id="modalNota" type="text" placeholder="Ej. Pedido proveedor, reposición…">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <button id="modalIngresoAgregar" class="primary">➕ Agregar al inventario</button>
+        </div>
+        <div class="field">
+          <label>Unidades capturadas en esta sesión</label>
+          <input id="modalIngresoContador" type="text" disabled value="0">
+        </div>
       </div>
     </div>
+
+    <div class="modal__footer">
+      <button id="modalIngresoTerminar" class="warn" title="Esc">Terminar ingreso (Esc)</button>
+    </div>
   </div>
+</div>
+
 
   <footer>
     <small class="muted">Mosaico + carrito listos. Próximo: ticket imprimible y descuentos rápidos.</small>

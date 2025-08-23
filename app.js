@@ -214,22 +214,49 @@ function deshacerUltimoMovimiento(){
 }
 
 /* ===== Ingreso modal ===== */
+function fillModalProductoOptions(){
+  const sel = document.getElementById("modalProducto");
+  sel.innerHTML = "";
+  STATE.catalogo.forEach(p=>{
+    const opt = document.createElement("option");
+    opt.value = p.id;
+    opt.textContent = p.nombre;
+    sel.appendChild(opt);
+  });
+}
+
 function abrirModalIngreso(){
+  // deshabilita el input de ventas para evitar foco del lector
   document.getElementById("ventaScan")?.setAttribute("disabled","true");
+
+  fillModalProductoOptions();
+  document.getElementById("modalCantidad").value = "1";
+  document.getElementById("modalNota").value = "";
+  document.getElementById("modalIngresoContador").value = "0";
+  // modo por defecto: unidad
+  document.querySelector('input[name="modoIngreso"][value="unidad"]').checked = true;
+  toggleModoLoteUI();
+
   const modal=document.getElementById("modalIngreso");
   modal.classList.remove("hidden"); modal.setAttribute("aria-hidden","false");
-  setTimeout(()=>document.getElementById("modalIngresoScan").focus(),50);
+  setTimeout(()=>document.getElementById("modalProducto").focus(),50);
 }
+
 function cerrarModalIngreso(){
   document.getElementById("ventaScan")?.removeAttribute("disabled");
   const modal=document.getElementById("modalIngreso");
   modal.classList.add("hidden"); modal.setAttribute("aria-hidden","true");
   setTimeout(()=>document.getElementById("ventaScan").focus(),50);
 }
+
 function toggleModoLoteUI(){
-  const isLote = [...document.querySelectorAll('input[name="modoIngreso"]')].find(r=>r.checked)?.value==="lote";
-  document.getElementById("fieldCantidadLote").style.display = isLote ? "block":"none";
+  const isLote = [...document.querySelectorAll('input[name="modoIngreso"]')]
+    .find(r=>r.checked)?.value === "lote";
+  const cant = document.getElementById("modalCantidad");
+  cant.disabled = !isLote;           // Unidad => deshabilitado (siempre 1)
+  if (!isLote) cant.value = "1";
 }
+
 function crearProductoRapidoDesdeCodigo(codigo){
   const nombre = (prompt("Código nuevo detectado. Nombre del producto:", "Nuevo producto")||"").trim();
   if(!nombre) return null;
@@ -240,31 +267,39 @@ function crearProductoRapidoDesdeCodigo(codigo){
   renderCatalogo(); renderInventario(); renderMosaicoVentas();
   return nuevo;
 }
-function procesarModalIngresoScan(){
-  if(!cooldownOk()) return;
-  const code = document.getElementById("modalIngresoScan").value.trim();
-  if(!code) return;
-  let prod = getProductoPorCodigoUnidad(code) || crearProductoRapidoDesdeCodigo(code);
-  if(!prod){ beep(false); return; }
-  const modo = [...document.querySelectorAll('input[name="modoIngreso"]')].find(r=>r.checked)?.value || "unidad";
-  if(modo==="unidad"){
-    registrarMovimiento({ tipo:"entrada", productoId: prod.id, cantidadUnidades:1, nota:"Ingreso unitario (modal)" });
-    document.getElementById("modalIngresoScan").value = "";
-    const c=document.getElementById("modalIngresoContador"); c.value=String((parseInt(c.value,10)||0)+1);
-    beep(true); return;
+function procesarIngresoManual(){
+  const sel = document.getElementById("modalProducto");
+  const pid = sel.value;
+  const prod = getProducto(pid);
+  if(!prod){ alert("Selecciona un producto válido."); return; }
+
+  const modo = [...document.querySelectorAll('input[name="modoIngreso"]')]
+    .find(r=>r.checked)?.value || "unidad";
+
+  let cantidad = 1;
+  if (modo === "lote") {
+    cantidad = Math.max(1, parseInt(document.getElementById("modalCantidad").value,10) || 1);
   }
-  let cantidad = Math.max(1, parseInt(document.getElementById("modalCantidadLote").value,10) || 1);
-  const ok = confirm(`Detecté "${prod.nombre}". ¿Agregar ${cantidad} unidades?`);
-  if(!ok){
-    const editar=confirm("¿Editar cantidad?");
-    if(editar){ const n=parseInt(prompt("Nueva cantidad:", String(cantidad)),10); if(!isNaN(n)&&n>0) cantidad=n; else { beep(false); return; } }
-    else { beep(false); return; }
-  }
-  registrarMovimiento({ tipo:"entrada", productoId: prod.id, cantidadUnidades:cantidad, nota:`Ingreso por lote (x${cantidad})` });
-  document.getElementById("modalIngresoScan").value = "";
-  const c=document.getElementById("modalIngresoContador"); c.value=String((parseInt(c.value,10)||0)+cantidad);
-  beep(true);
+
+  const nota = (document.getElementById("modalNota").value||"").trim();
+
+  registrarMovimiento({
+    tipo: "entrada",
+    productoId: pid,
+    cantidadUnidades: cantidad,
+    nota: nota ? `Ingreso manual: ${nota}` : "Ingreso manual"
+  });
+
+  // contador de sesión
+  const c = document.getElementById("modalIngresoContador");
+  c.value = String((parseInt(c.value,10)||0) + cantidad);
+
+  // feedback y preparar siguiente
+  try{ beep(true); }catch{}
+  if (modo === "lote") document.getElementById("modalCantidad").select();
+  else sel.focus(); // unidad: listo para elegir otro
 }
+
 
 /* ===== Mosaico de ventas ===== */
 function productoBadgeHTML(p, stock){
@@ -489,48 +524,25 @@ function procesarVentaScan(codeOverride=null){
 }
 
 /* ===== Listeners ===== */
-function wireEvents(){
-  // Venta (escáner físico opcional)
-  document.getElementById("ventaScan").addEventListener("keydown",(e)=>{ if(e.key==="Enter") procesarVentaScan(); });
-  // re-enfocar para lectores
-  setInterval(()=>{ const el=document.getElementById("ventaScan"); if(document.activeElement!==el && !el.disabled) el.focus(); }, 2000);
+// Ingreso manual (F2)
+document.getElementById("btnIngresoRapido").addEventListener("click", abrirModalIngreso);
+document.getElementById("modalIngresoCerrar").addEventListener("click", cerrarModalIngreso);
+document.getElementById("modalIngresoTerminar").addEventListener("click", cerrarModalIngreso);
+document.querySelectorAll('input[name="modoIngreso"]').forEach(r=> r.addEventListener("change", toggleModoLoteUI));
+document.getElementById("modalIngresoAgregar").addEventListener("click", procesarIngresoManual);
 
-  document.getElementById("btnUndo").addEventListener("click", deshacerUltimoMovimiento);
+// Enter en cantidad (cuando está habilitada)
+document.getElementById("modalCantidad").addEventListener("keydown", (e)=>{
+  if(e.key === "Enter") procesarIngresoManual();
+});
 
-  // Botones de la orden
-  document.getElementById("btnOrderClear").addEventListener("click", clearOrder);
-  document.getElementById("btnOrderCancel").addEventListener("click", cancelOrder);
-  document.getElementById("btnOrderCheckout").addEventListener("click", checkoutOrder);
+// Atajos: F2 abre, Esc cierra si está abierto
+document.addEventListener("keydown",(e)=>{
+  const modalAbierto = !document.getElementById("modalIngreso").classList.contains("hidden");
+  if(e.key==="F2" && !modalAbierto){ e.preventDefault(); abrirModalIngreso(); }
+  if(e.key==="Escape" && modalAbierto){ e.preventDefault(); cerrarModalIngreso(); }
+});
 
-  // Catálogo
-  document.getElementById("btnAgregarProducto").addEventListener("click", ()=>{
-    const nuevo={ id:"prod_"+crypto.randomUUID().slice(0,8), nombre:"Nuevo producto", unidadesPorPaquete:12, codigoBarrasUnidad:"", precio:0, color:"#374151", emoji:"🧃" };
-    STATE.catalogo.push(nuevo); guardarEstado(STATE); renderCatalogo(); renderMosaicoVentas();
-  });
-  document.getElementById("btnGuardarCatalogo").addEventListener("click", ()=>{ guardarEstado(STATE); alert("Catálogo guardado."); renderInventario(); renderMosaicoVentas(); });
-
-  // Inventario buttons
-  document.getElementById("btnRecalcular").addEventListener("click", ()=>{ renderInventario(); alert("Recalculado."); });
-  document.getElementById("btnResetear").addEventListener("click", ()=>{ if(confirm("Esto borrará los datos locales. ¿Continuar?")){ localStorage.removeItem(LS_KEY); location.reload(); } });
-
-  // Ingreso modal
-  document.getElementById("btnIngresoRapido").addEventListener("click", abrirModalIngreso);
-  document.getElementById("modalIngresoCerrar").addEventListener("click", cerrarModalIngreso);
-  document.getElementById("modalIngresoTerminar").addEventListener("click", cerrarModalIngreso);
-  document.getElementById("modalIngresoScan").addEventListener("keydown",(e)=>{ if(e.key==="Enter") procesarModalIngresoScan(); });
-  document.querySelectorAll('input[name="modoIngreso"]').forEach(r=> r.addEventListener("change", toggleModoLoteUI));
-
-  // Búsqueda mosaico
-  document.getElementById("ventaBuscar").addEventListener("input", renderMosaicoVentas);
-  document.getElementById("btnClearSearch").addEventListener("click", ()=>{ document.getElementById("ventaBuscar").value=""; renderMosaicoVentas(); });
-
-  // Atajos
-  document.addEventListener("keydown",(e)=>{
-    if(e.key==="F2" && document.getElementById("modalIngreso").classList.contains("hidden")){ e.preventDefault(); abrirModalIngreso(); }
-    if(e.key==="Escape" && !document.getElementById("modalIngreso").classList.contains("hidden")){ e.preventDefault(); cerrarModalIngreso(); }
-    if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="z"){ e.preventDefault(); deshacerUltimoMovimiento(); }
-  });
-}
 
 /* ===== Init ===== */
 function init(){
