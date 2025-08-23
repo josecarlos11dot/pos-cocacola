@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>POS Coca-Cola — Ventas con Mosaico</title>
+  <title>POS Coca-Cola — Ventas con Mosaico + Orden</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header>
     <h1>POS Coca-Cola</h1>
-    <p class="muted">Ventas por mosaico (click/touch), ingreso rápido (F2), escáner opcional.</p>
+    <p class="muted">Ventas por mosaico (click/touch), carrito/orden, ingreso rápido (F2) y escáner físico opcional.</p>
   </header>
 
   <main>
@@ -38,20 +38,59 @@
       <!-- Mosaico interactivo -->
       <div id="ventaMosaico" class="grid-mosaic"></div>
 
+      <!-- Panel de orden (carrito) -->
+      <div class="order-panel">
+        <div class="order-header">
+          <div>
+            <strong>Orden actual</strong>
+            <span class="muted" id="orderItemsCount">0 artículos</span>
+          </div>
+          <div class="order-actions">
+            <button id="btnOrderClear" class="ghost">Vaciar</button>
+            <button id="btnOrderCancel" class="ghost danger">Cancelar</button>
+            <button id="btnOrderCheckout" class="primary">Cerrar orden (Cobrar)</button>
+          </div>
+        </div>
+
+        <table id="orderTable" class="tabla-compacta">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th style="width:110px;">Cant.</th>
+              <th style="width:110px;">Precio</th>
+              <th style="width:120px;">Subtotal</th>
+              <th style="width:60px;"></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+
+        <div class="order-total">
+          <div class="order-total-line">
+            <span>Artículos</span>
+            <strong id="orderCount">0</strong>
+          </div>
+          <div class="order-total-line">
+            <span>Total</span>
+            <strong id="orderTotal">$0.00</strong>
+          </div>
+        </div>
+      </div>
+
       <!-- (opcional) Entrada por escáner físico -->
       <div class="row" style="margin-top:10px">
         <div class="field">
           <label>Escáner / Código detectado (opcional)</label>
-          <input id="ventaScan" type="text" autocomplete="off" placeholder="Escanea aquí y Enter para vender 1">
+          <input id="ventaScan" type="text" autocomplete="off" placeholder="Escanea aquí y Enter para agregar al carrito">
         </div>
         <div class="field">
-          <label>Último producto vendido</label>
+          <label>Último producto detectado</label>
           <input id="ventaUltimo" type="text" disabled>
         </div>
       </div>
 
       <p class="muted">
-        Tip: click/touch = vende 1 • <b>Alt+click</b> / <b>mantener presionado</b> = cantidad personalizada •
+        Tip: click/touch = agrega 1 al carrito • <b>Alt+click</b> / <b>mantener presionado</b> = cantidad personalizada •
         Si no hay stock, el tile vibra.
       </p>
 
@@ -187,7 +226,7 @@
   </div>
 
   <footer>
-    <small class="muted">Mosaico de ventas interactivo listo. Próximo: categorías, combos y descuentos rápidos.</small>
+    <small class="muted">Mosaico + carrito listos. Próximo: ticket imprimible y descuentos rápidos.</small>
   </footer>
 
   <script src="app.js"></script>

@@ -56,12 +56,7 @@ tr.total-row{background:#1e293b;color:#facc15;font-weight:bold}
 }
 .tile:hover{ transform: translateY(-2px); box-shadow:0 12px 26px rgba(0,0,0,.35) }
 .tile:active{ transform: scale(.99) }
-.tile.badge{
-  display:flex; align-items:center; justify-content:center;
-}
-.tile__emoji{
-  font-size:34px; line-height:1; filter: drop-shadow(0 2px 6px rgba(0,0,0,.5));
-}
+.tile__emoji{ font-size:34px; line-height:1; filter: drop-shadow(0 2px 6px rgba(0,0,0,.5)); }
 .tile__title{ font-weight:700; font-size:14px; margin-top:6px }
 .tile__price{ font-size:13px; color:#93c5fd }
 .tile__footer{ display:flex; align-items:center; justify-content:space-between; gap:8px }
@@ -79,6 +74,12 @@ tr.total-row{background:#1e293b;color:#facc15;font-weight:bold}
   80%{ transform: translateX(2px) }
 }
 
+/* Chapita de cantidad en el tile */
+.badge-on-tile{
+  position:absolute; top:8px; right:8px; background:#2563eb; color:#fff; font-weight:700;
+  border-radius:999px; padding:2px 8px; font-size:12px; box-shadow:0 2px 8px rgba(0,0,0,.35);
+}
+
 /* ===== Modal ===== */
 .modal.hidden{display:none}
 .modal{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.5);display:grid;place-items:center}
@@ -88,3 +89,23 @@ tr.total-row{background:#1e293b;color:#facc15;font-weight:bold}
 .modal__body{margin:8px 0 12px}
 input:disabled{opacity:.8}
 .segmented{display:flex;gap:12px}
+
+/* ===== Panel de orden ===== */
+.order-panel{
+  margin-top:12px; border:1px solid #1f2a44; border-radius:14px; background:#0a1020;
+  padding:10px;
+}
+.order-header{
+  display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px;
+}
+.order-actions{ display:flex; gap:8px; }
+.order-total{
+  margin-top:8px; display:flex; align-items:center; justify-content:flex-end; gap:18px;
+}
+.order-total-line{ display:flex; gap:8px; align-items:center; }
+.order-qty{
+  display:flex; gap:6px; align-items:center; justify-content:center;
+}
+.order-qty button{
+  width:28px; height:28px; padding:0; line-height:1; border-radius:8px;
+}

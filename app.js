@@ -1,5 +1,5 @@
-/* POS Coca-Cola — Ventas con mosaico + ingreso modal + KPIs */
-const LS_KEY = "pos_coca_ui_mosaic_v1";
+/* POS Coca-Cola — Mosaico + Orden (carrito) + Ingreso rápido + KPIs */
+const LS_KEY = "pos_coca_ui_mosaic_order_v1";
 
 /* Catálogo base con estilo visual (color/emoji) */
 const catalogoBase = [
@@ -15,6 +15,20 @@ let STATE = seedSiHaceFalta();
 let ULTIMO_MOV = null;
 let lastScanTs = 0;
 
+/* ===== Orden actual (carrito) ===== */
+let ORDER = []; // [{productoId, qty, price}]
+function findOrderLine(pid){ return ORDER.find(l => l.productoId === pid) || null; }
+function qtyInOrder(pid){ return findOrderLine(pid)?.qty || 0; }
+function availableFor(pid){
+  const stock = calcularStockPorProducto();
+  return Math.max(0, (stock[pid]||0) - qtyInOrder(pid));
+}
+function orderTotal(){
+  let items=0, total=0;
+  for(const l of ORDER){ items += l.qty; total += (l.qty * (Number(l.price)||0)); }
+  return { items, total: +total.toFixed(2) };
+}
+
 /* ===== Persistencia ===== */
 function cargarEstado(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)||""); }catch{ return null; } }
 function guardarEstado(s){ localStorage.setItem(LS_KEY, JSON.stringify(s)); }
@@ -27,7 +41,7 @@ function seedSiHaceFalta() {
     fecha: ahora,
     tipo: "entrada",
     productoId: p.id,
-    cantidadUnidades: p.unidadesPorPaquete, // 1 paquete por producto
+    cantidadUnidades: p.unidadesPorPaquete, // 1 paquete por producto (12)
     nota: "Inventario inicial (1 paquete por producto)"
   }));
   s = { catalogo: catalogoBase, movimientos: entradasSeed };
@@ -76,6 +90,8 @@ function renderCatalogo(){
     if(field==="unidadesPorPaquete"){ prod[field] = Math.max(1, parseInt(el.value,10) || 1); }
     else if(field==="precio"){ prod[field] = Math.max(0, parseFloat(el.value)||0); }
     else { prod[field] = el.value; }
+    // Refrescar mosaico si cambian nombre/precio/color/emoji
+    if (["nombre","precio","color","emoji"].includes(field)) renderMosaicoVentas();
   });
   tbody.addEventListener("click", e=>{
     const btn=e.target.closest("button[data-action='del']"); if(!btn) return;
@@ -188,21 +204,6 @@ function deshacerUltimoMovimiento(){
   } else { alert("No se encontró el movimiento."); }
 }
 
-/* ===== Ventas: escáner físico opcional ===== */
-function procesarVentaScan(codeOverride=null){
-  if(!cooldownOk()) return;
-  const code = (codeOverride ?? document.getElementById("ventaScan").value.trim());
-  if(!code) return;
-  const prod = getProductoPorCodigoUnidad(code);
-  if(!prod){ alert("Código no registrado en catálogo."); document.getElementById("ventaScan").value=""; beep(false); return; }
-  const stock = calcularStockPorProducto();
-  if((stock[prod.id]??0) <= 0){ alert(`Sin stock para ${prod.nombre}.`); document.getElementById("ventaScan").value=""; beep(false); return; }
-  registrarMovimiento({ tipo:"salida", productoId: prod.id, cantidadUnidades:1, nota:"Venta por escáner" });
-  document.getElementById("ventaUltimo").value = prod.nombre;
-  document.getElementById("ventaScan").value = "";
-  beep(true);
-}
-
 /* ===== Ingreso modal ===== */
 function abrirModalIngreso(){
   document.getElementById("ventaScan")?.setAttribute("disabled","true");
@@ -219,6 +220,16 @@ function cerrarModalIngreso(){
 function toggleModoLoteUI(){
   const isLote = [...document.querySelectorAll('input[name="modoIngreso"]')].find(r=>r.checked)?.value==="lote";
   document.getElementById("fieldCantidadLote").style.display = isLote ? "block":"none";
+}
+function crearProductoRapidoDesdeCodigo(codigo){
+  const nombre = (prompt("Código nuevo detectado. Nombre del producto:", "Nuevo producto")||"").trim();
+  if(!nombre) return null;
+  const up = Math.max(1, parseInt(prompt("Unidades por paquete (ej. 12):","12"),10) || 1);
+  const precio = Math.max(0, parseFloat(prompt("Precio por unidad (MXN):","0")) || 0);
+  const nuevo = { id:"prod_"+crypto.randomUUID().slice(0,8), nombre, unidadesPorPaquete:up, codigoBarrasUnidad:String(codigo).trim(), precio, color:"#374151", emoji:"🧃" };
+  STATE.catalogo.push(nuevo); guardarEstado(STATE);
+  renderCatalogo(); renderInventario(); renderMosaicoVentas();
+  return nuevo;
 }
 function procesarModalIngresoScan(){
   if(!cooldownOk()) return;
@@ -246,21 +257,8 @@ function procesarModalIngresoScan(){
   beep(true);
 }
 
-/* ===== Alta rápida desde código ===== */
-function crearProductoRapidoDesdeCodigo(codigo){
-  const nombre = (prompt("Código nuevo detectado. Nombre del producto:", "Nuevo producto")||"").trim();
-  if(!nombre) return null;
-  const up = Math.max(1, parseInt(prompt("Unidades por paquete (ej. 12):","12"),10) || 1);
-  const precio = Math.max(0, parseFloat(prompt("Precio por unidad (MXN):","0")) || 0);
-  const nuevo = { id:"prod_"+crypto.randomUUID().slice(0,8), nombre, unidadesPorPaquete:up, codigoBarrasUnidad:String(codigo).trim(), precio, color:"#374151", emoji:"🧃" };
-  STATE.catalogo.push(nuevo); guardarEstado(STATE);
-  renderCatalogo(); renderInventario(); renderMosaicoVentas();
-  return nuevo;
-}
-
 /* ===== Mosaico de ventas ===== */
 function productoBadgeHTML(p, stock){
-  const bg = p.color ? `background: linear-gradient(135deg, ${p.color}44, ${p.color}22); border-color:${p.color}88;` : "";
   const emoji = p.emoji || "🥤";
   return `
     <div class="tile__footer">
@@ -286,31 +284,43 @@ function renderMosaicoVentas(){
       const tile = document.createElement("button");
       tile.className = "tile";
       if(s<=0) tile.classList.add("tile--no-stock");
-      tile.style.setProperty("--accent", p.color||"#1f2937");
       tile.style.borderColor = (p.color ? p.color : "#20304f");
+      tile.style.background = p.color
+        ? `linear-gradient(135deg, ${p.color}44, ${p.color}22)`
+        : "linear-gradient(135deg,#1b2338,#0a1020)";
       tile.innerHTML = productoBadgeHTML(p, s);
 
-      // Click / Alt+Click / Long press
+      // Chapita con cantidad en carrito
+      const inOrder = qtyInOrder(p.id);
+      if (inOrder > 0) {
+        const badge = document.createElement("div");
+        badge.className = "badge-on-tile";
+        badge.textContent = `×${inOrder}`;
+        tile.appendChild(badge);
+      }
+
+      // Agregar al carrito (click / alt-click / long-press)
       let pressTimer=null, pressed=false;
-      const vender = (cantidad=1)=>{
-        // Validar stock
-        const st = calcularStockPorProducto()[p.id] ?? 0;
-        if(st < cantidad){
-          tile.classList.add("tile--shake"); setTimeout(()=>tile.classList.remove("tile--shake"), 350);
-          beep(false); return;
-        }
-        registrarMovimiento({ tipo:"salida", productoId:p.id, cantidadUnidades:cantidad, nota:`Venta mosaico (x${cantidad})` });
-        document.getElementById("ventaUltimo").value = p.nombre;
-        renderMosaicoVentas(); // refrescar stocks en tarjetas
+      const agregar = (cantidad=1)=>{
+        const cap = availableFor(p.id);
+        if (cap <= 0){ tile.classList.add("tile--shake"); setTimeout(()=>tile.classList.remove("tile--shake"), 350); beep(false); return; }
+        if (cantidad > cap){ alert(`Solo hay ${cap} disponibles.`); cantidad = cap; if (cantidad<=0) return; }
+
+        const precio = Number(p.precio||0);
+        const line = findOrderLine(p.id);
+        if (line) line.qty += cantidad;
+        else ORDER.push({ productoId: p.id, qty: cantidad, price: precio });
+
+        renderOrderPanel(); renderMosaicoVentas();
         beep(true);
       };
 
       tile.addEventListener("click", (e)=>{
-        if(e.altKey){ // Alt+click = cantidad
+        if(e.altKey){
           const n = parseInt(prompt(`¿Cuántas unidades de "${p.nombre}"?`, "2"),10);
-          if(!isNaN(n) && n>0) vender(n);
-        } else if (!pressed){ // click normal
-          vender(1);
+          if(!isNaN(n) && n>0) agregar(n);
+        } else if (!pressed){
+          agregar(1);
         }
         pressed=false;
       });
@@ -321,7 +331,7 @@ function renderMosaicoVentas(){
         pressTimer=setTimeout(()=>{
           pressed=true;
           const n = parseInt(prompt(`¿Cuántas unidades de "${p.nombre}"?`, "2"),10);
-          if(!isNaN(n) && n>0) vender(n);
+          if(!isNaN(n) && n>0) agregar(n);
         }, 500);
       });
       tile.addEventListener("touchend", ()=> clearTimeout(pressTimer));
@@ -331,10 +341,102 @@ function renderMosaicoVentas(){
     });
 }
 
+/* ===== Panel de orden ===== */
+function renderOrderPanel(){
+  const tbody = document.querySelector("#orderTable tbody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  for(const l of ORDER){
+    const p = getProducto(l.productoId);
+    const precio = Number(l.price || p?.precio || 0);
+    const sub = +(precio * l.qty).toFixed(2);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${p ? p.nombre : l.productoId}</td>
+      <td>
+        <div class="order-qty">
+          <button data-action="dec" data-id="${l.productoId}" class="ghost">−</button>
+          <input data-action="edit" data-id="${l.productoId}" type="number" min="1" value="${l.qty}" style="width:56px; text-align:center;">
+          <button data-action="inc" data-id="${l.productoId}" class="ghost">＋</button>
+        </div>
+      </td>
+      <td>${formMXN(precio)}</td>
+      <td>${formMXN(sub)}</td>
+      <td><button data-action="del" data-id="${l.productoId}" class="ghost">🗑️</button></td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  // Totales
+  const { items, total } = orderTotal();
+  document.getElementById("orderItemsCount").textContent = `${ORDER.length} líneas`;
+  document.getElementById("orderCount").textContent = String(items);
+  document.getElementById("orderTotal").textContent = formMXN(total);
+
+  // Delegación de eventos
+  tbody.onclick = (e)=>{
+    const el = e.target.closest("button, input");
+    if (!el) return;
+    const pid = el.getAttribute("data-id");
+    const act = el.getAttribute("data-action");
+    const line = findOrderLine(pid);
+    if (!line) return;
+
+    if (act === "inc") {
+      const cap = availableFor(pid);
+      if (cap <= 0){ beep(false); alert("Sin stock disponible para agregar más."); return; }
+      line.qty += 1;
+    }
+    if (act === "dec") {
+      line.qty -= 1;
+      if (line.qty <= 0) ORDER = ORDER.filter(l => l.productoId !== pid);
+    }
+    if (act === "del") {
+      ORDER = ORDER.filter(l => l.productoId !== pid);
+    }
+    if (act === "edit" && el.tagName === "INPUT") {
+      el.addEventListener("change", ()=>{
+        let n = Math.max(1, parseInt(el.value,10) || 1);
+        const cap = qtyInOrder(pid) + availableFor(pid); // stock total posible
+        if (n > cap) { alert(`Máximo permitido: ${cap}`); n = cap; }
+        line.qty = n;
+        renderOrderPanel(); renderMosaicoVentas();
+      }, { once: true });
+      return;
+    }
+
+    renderOrderPanel(); renderMosaicoVentas();
+  };
+}
+
+/* ===== Escáner físico (agrega al carrito) ===== */
+function procesarVentaScan(codeOverride=null){
+  if(!cooldownOk()) return;
+  const code = (codeOverride ?? document.getElementById("ventaScan").value.trim());
+  if(!code) return;
+  const prod = getProductoPorCodigoUnidad(code);
+  if(!prod){ alert("Código no registrado en catálogo."); document.getElementById("ventaScan").value=""; beep(false); return; }
+
+  const cap = availableFor(prod.id);
+  if (cap <= 0){ alert(`Sin stock para ${prod.nombre}.`); document.getElementById("ventaScan").value=""; beep(false); return; }
+
+  const line = findOrderLine(prod.id);
+  if (line) line.qty += 1;
+  else ORDER.push({ productoId: prod.id, qty: 1, price: Number(prod.precio||0) });
+
+  document.getElementById("ventaUltimo").value = prod.nombre;
+  document.getElementById("ventaScan").value = "";
+  renderOrderPanel(); renderMosaicoVentas();
+  beep(true);
+}
+
 /* ===== Listeners ===== */
 function wireEvents(){
   // Venta (escáner físico opcional)
   document.getElementById("ventaScan").addEventListener("keydown",(e)=>{ if(e.key==="Enter") procesarVentaScan(); });
+  // re-enfocar para lectores
+  setInterval(()=>{ const el=document.getElementById("ventaScan"); if(document.activeElement!==el && !el.disabled) el.focus(); }, 2000);
+
   document.getElementById("btnUndo").addEventListener("click", deshacerUltimoMovimiento);
 
   // Catálogo
@@ -365,9 +467,6 @@ function wireEvents(){
     if(e.key==="Escape" && !document.getElementById("modalIngreso").classList.contains("hidden")){ e.preventDefault(); cerrarModalIngreso(); }
     if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="z"){ e.preventDefault(); deshacerUltimoMovimiento(); }
   });
-
-  // Foco de venta cada 2s (para lector físico)
-  setInterval(()=>{ const el=document.getElementById("ventaScan"); if(document.activeElement!==el && !el.disabled) el.focus(); }, 2000);
 }
 
 /* ===== Init ===== */
@@ -377,6 +476,7 @@ function init(){
   renderMovimientos();
   renderResumenVentasHoy();
   renderMosaicoVentas();
+  renderOrderPanel();
   wireEvents();
 }
 document.addEventListener("DOMContentLoaded", init);
