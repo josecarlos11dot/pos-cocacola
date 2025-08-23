@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Scanner — POS Coca-Cola</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Pequeños ajustes para vista de scanner en móvil */
+    header { position: static; }
+    .scanner-header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .scanner-header a { color:#93c5fd; text-decoration:none; }
+    .brand { font-weight:700; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="scanner-header">
+      <div class="brand">📷 Scanner — Ingreso rápido</div>
+      <a href="./">↩ Ir al POS</a>
+    </div>
+    <p class="muted">Escanea con la cámara del iPhone. Modo Unidad/Lote con alta rápida de producto.</p>
+  </header>
+
+  <main>
+    <section class="card venta-principal">
+      <div class="header-line">
+        <h2>Ingreso por escaneo</h2>
+        <div class="toolbar">
+          <button id="btnResetLocal" class="ghost danger" title="Borra datos locales de este dispositivo">Reset local</button>
+        </div>
+      </div>
+
+      <!-- Controles de cámara -->
+      <div class="cam-controls">
+        <div class="field">
+          <label>Cámara</label>
+          <select id="camSelect"></select>
+        </div>
+        <div class="cam-buttons">
+          <button id="camStart" class="primary">Usar cámara</button>
+          <button id="camStop" class="ghost">Detener</button>
+          <button id="camTorch" class="ghost" title="Linterna">🔦</button>
+        </div>
+        <div class="cam-status">
+          <span id="camStatus" class="muted">Cámara inactiva</span>
+        </div>
+      </div>
+
+      <div class="cam-preview">
+        <video id="video" muted playsinline></video>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>Modo</label>
+          <div class="segmented">
+            <label><input type="radio" name="modoIngreso" value="unidad" checked> Unidad</label>
+            <label><input type="radio" name="modoIngreso" value="lote"> Lote</label>
+          </div>
+        </div>
+        <div class="field" id="fieldCantidadLote" style="display:none;">
+          <label>Cantidad (para lote)</label>
+          <input id="cantidadLote" type="number" min="1" value="12">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>Escáner / Código detectado (manual si hace falta)</label>
+          <input id="scanInput" type="text" placeholder="Pega código y Enter">
+        </div>
+        <div class="field">
+          <label>Unidades capturadas en esta sesión</label>
+          <input id="contadorSesion" type="text" disabled value="0">
+        </div>
+      </div>
+
+      <p class="muted">
+        Atajos: <b>L</b> alterna Unidad/Lote • Confirma cantidad al leer en Lote • Alta rápida si el código no existe.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Últimos movimientos (este dispositivo)</h2>
+      <table id="tablaMovs" class="tabla-compacta">
+        <thead>
+          <tr>
+            <th>Hora</th>
+            <th>Producto</th>
+            <th>Cant.</th>
+            <th>Nota</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer>
+    <small class="muted">
+      Nota: este Scanner y el POS comparten <i>localStorage</i> solo en el mismo dispositivo.
+      Para sincronizar entre teléfono y PC en tiempo real, habilitaremos un backend (Supabase/Firebase) en el siguiente paso.
+    </small>
+  </footer>
+
+  <!-- ZXing -->
+  <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
+  <script src="scanner.js"></script>
+</body>
+</html>
