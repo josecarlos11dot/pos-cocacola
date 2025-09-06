@@ -54,6 +54,20 @@ tr.total-row{background:#1e293b;color:#facc15;font-weight:bold}
   transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
   min-height:140px; display:flex; flex-direction:column; justify-content:space-between;
 }
+.tile__img{
+  position:absolute;
+  right:10px; 
+  bottom:10px;
+  width:64px;
+  height:64px;
+  object-fit:cover;
+  border-radius:12px;
+  border:1px solid #20304f;
+  box-shadow:0 6px 18px rgba(0,0,0,.35);
+}
+.tile__emoji{ position:absolute; right:12px; bottom:12px; } /* ya existía; asegúrate de mantenerla */
+
+
 .tile:hover{ transform: translateY(-2px); box-shadow:0 12px 26px rgba(0,0,0,.35) }
 .tile:active{ transform: scale(.99) }
 .tile__emoji{ font-size:34px; line-height:1; filter: drop-shadow(0 2px 6px rgba(0,0,0,.5)); }

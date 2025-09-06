@@ -3,13 +3,14 @@ const LS_KEY = "pos_coca_ui_mosaic_order_v1";
 
 /* Catálogo base con estilo visual (color/emoji) */
 const catalogoBase = [
-  { id: "coca_regular_355", nombre: "Coca-Cola Regular 355 ml", unidadesPorPaquete: 12, codigoBarrasUnidad: "", precio: 0, color: "#b91c1c", emoji:"🥤" },
-  { id: "coca_zero_355",    nombre: "Coca-Cola Zero 355 ml",    unidadesPorPaquete: 12, codigoBarrasUnidad: "", precio: 0, color: "#111827", emoji:"⚫" },
-  { id: "sidral_600",       nombre: "Sidral Mundet 600 ml",     unidadesPorPaquete: 12, codigoBarrasUnidad: "", precio: 0, color: "#9a3412", emoji:"🍎" },
-  { id: "sprite_600",       nombre: "Sprite 600 ml",            unidadesPorPaquete: 12, codigoBarrasUnidad: "", precio: 0, color: "#047857", emoji:"🟢" },
-  { id: "agua_500",         nombre: "Agua 500 ml",              unidadesPorPaquete: 12, codigoBarrasUnidad: "", precio: 0, color: "#1d4ed8", emoji:"💧" },
-  { id: "agua_1l",          nombre: "Agua 1 L",                 unidadesPorPaquete: 12, codigoBarrasUnidad: "", precio: 0, color: "#0ea5e9", emoji:"💧" },
+  { id: "coca_regular_355", nombre: "Coca-Cola Regular 355 ml", unidadesPorPaquete: 12, codigoBarrasUnidad: "", precio: 0, color: "#b91c1c", emoji:"🥤", imagen: "img/coca-original.jpg" },
+  { id: "coca_zero_355",    nombre: "Coca-Cola Zero 355 ml",    unidadesPorPaquete: 12, codigoBarrasUnidad: "", precio: 0, color: "#111827", emoji:"⚫",  imagen: "img/coca-zero.jpeg" },
+  { id: "sidral_600",       nombre: "Sidral Mundet 600 ml",     unidadesPorPaquete: 12, codigoBarrasUnidad: "", precio: 0, color: "#9a3412", emoji:"🍎", imagen: "img/sidral-600.png" },
+  { id: "sprite_600",       nombre: "Sprite 600 ml",            unidadesPorPaquete: 12, codigoBarrasUnidad: "", precio: 0, color: "#047857", emoji:"🟢", imagen: "img/sprite.jpg" },
+  { id: "agua_500",         nombre: "Agua 500 ml",              unidadesPorPaquete: 12, codigoBarrasUnidad: "", precio: 0, color: "#1d4ed8", emoji:"💧", imagen: "img/ciel-500.jpg" },
+  { id: "agua_1l",          nombre: "Agua 1 L",                 unidadesPorPaquete: 12, codigoBarrasUnidad: "", precio: 0, color: "#0ea5e9", emoji:"💧", imagen: "img/Ciel-1L.jpg" },
 ];
+
 
 let STATE = seedSiHaceFalta();
 let ULTIMO_MOV = null;
@@ -84,14 +85,17 @@ function renderCatalogo(){
   for(const p of STATE.catalogo){
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td><input data-field="nombre" data-id="${p.id}" type="text" value="${p.nombre}"></td>
-      <td><input data-field="unidadesPorPaquete" data-id="${p.id}" type="number" min="1" value="${p.unidadesPorPaquete}"></td>
-      <td><input data-field="precio" data-id="${p.id}" type="number" min="0" step="0.01" value="${Number(p.precio||0)}"></td>
-      <td><input data-field="codigoBarrasUnidad" data-id="${p.id}" type="text" value="${p.codigoBarrasUnidad||""}" placeholder="EAN/UPC"></td>
-      <td><input data-field="color" data-id="${p.id}" type="text" value="${p.color||""}" placeholder="#rrggbb"></td>
-      <td><input data-field="emoji" data-id="${p.id}" type="text" value="${p.emoji||""}" placeholder="🥤"></td>
-      <td><button class="ghost" data-action="del" data-id="${p.id}">🗑️</button></td>
-    `;
+  <td><input data-field="nombre" data-id="${p.id}" type="text" value="${p.nombre}"></td>
+  <td><input data-field="unidadesPorPaquete" data-id="${p.id}" type="number" min="1" value="${p.unidadesPorPaquete}"></td>
+  <td><input data-field="precio" data-id="${p.id}" type="number" min="0" step="0.01" value="${Number(p.precio||0)}"></td>
+  <td><input data-field="codigoBarrasUnidad" data-id="${p.id}" type="text" value="${p.codigoBarrasUnidad||""}" placeholder="EAN/UPC"></td>
+  <td><input data-field="color" data-id="${p.id}" type="text" value="${p.color||""}" placeholder="#rrggbb"></td>
+  <td><input data-field="emoji" data-id="${p.id}" type="text" value="${p.emoji||""}" placeholder="🥤"></td>
+  <td><input data-field="imagen" data-id="${p.id}" type="text" value="${p.imagen||""}" placeholder="img/archivo.jpg"></td>
+  <td><button class="ghost" data-action="del" data-id="${p.id}">🗑️</button></td>
+`;
+
+  
     tbody.appendChild(tr);
   }
   tbody.addEventListener("input", e=>{
@@ -317,17 +321,21 @@ function procesarIngresoManual(){
 
 /* ===== Mosaico de ventas ===== */
 function productoBadgeHTML(p, stock){
+  const hasImg = p.imagen && p.imagen.trim() !== "";
   const emoji = p.emoji || "🥤";
   return `
+    ${hasImg
+      ? `<img class="tile__img" src="${p.imagen}" alt="${p.nombre}" loading="lazy">`
+      : `<div class="tile__emoji" aria-hidden="true">${emoji}</div>`}
     <div class="tile__footer">
       <div class="tile__title">${p.nombre}</div>
       <div class="tile__price">${formMXN(p.precio||0)}</div>
     </div>
     <div class="tile__pulse"></div>
-    <div class="tile__emoji" aria-hidden="true">${emoji}</div>
     <div class="tile__stock">${stock} en stock</div>
   `;
 }
+
 function renderMosaicoVentas(){
   const wrap = document.getElementById("ventaMosaico");
   if(!wrap) return;
@@ -619,7 +627,6 @@ if (ventaScan) {
 
 
 
-
 /* ===== Init ===== */
 function init(){
   // Si el catálogo está vacío, ofrecer restaurarlo
@@ -630,6 +637,16 @@ function init(){
     }
   }
 
+  // 🔧 Migrar campo imagen si falta
+  const baseMap = Object.fromEntries(catalogoBase.map(p => [p.id, p.imagen]));
+  STATE.catalogo.forEach(p => {
+    if (!p.imagen || !p.imagen.trim()) {
+      if (baseMap[p.id]) p.imagen = baseMap[p.id];
+    }
+  });
+  guardarEstado(STATE);
+
+  // Renderizar todo
   renderCatalogo();
   renderInventario();
   renderMovimientos();

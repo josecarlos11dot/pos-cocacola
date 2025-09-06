@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>POS Coca-Cola — Ventas con Mosaico + Orden</title>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
   <header>
     <h1>POS Coca-Cola</h1>
@@ -81,7 +83,8 @@
       <div class="row" style="margin-top:10px">
         <div class="field">
           <label>Escáner / Código detectado (opcional)</label>
-          <input id="ventaScan" type="text" autocomplete="off" placeholder="Escanea aquí y Enter para agregar al carrito">
+          <input id="ventaScan" type="text" autocomplete="off"
+            placeholder="Escanea aquí y Enter para agregar al carrito">
         </div>
         <div class="field">
           <label>Último producto detectado</label>
@@ -90,7 +93,8 @@
       </div>
 
       <p class="muted">
-        Tip: click/touch = agrega 1 al carrito • <b>Alt+click</b> / <b>mantener presionado</b> = cantidad personalizada •
+        Tip: click/touch = agrega 1 al carrito • <b>Alt+click</b> / <b>mantener presionado</b> = cantidad personalizada
+        •
         Si no hay stock, el tile vibra.
       </p>
 
@@ -138,18 +142,20 @@
             <th>Código (unidad)</th>
             <th>Color</th>
             <th>Emoji</th>
+            <th>Imagen</th> <!-- 👈 aquí agregamos la nueva columna -->
             <th></th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
+
       <p class="muted">Los campos <b>Color</b> y <b>Emoji</b> dan estilo a los mosaicos. Puedes dejarlos vacíos.</p>
       <div class="toolbar">
         <button id="btnAgregarProducto" class="ghost">+ Producto</button>
         <button id="btnRestaurarCatalogo" class="ghost">↺ Restaurar catálogo base</button>
         <button id="btnGuardarCatalogo" class="primary">Guardar catálogo</button>
       </div>
-      
+
     </section>
 
     <!-- ===== 3) Inventario ===== -->
@@ -158,7 +164,8 @@
         <h2>📊 Inventario actual</h2>
         <div class="toolbar">
           <button id="btnRecalcular" class="ghost">Recalcular</button>
-          <button id="btnResetear" class="ghost danger" title="Borrar datos locales (solo desarrollo)">Reset local</button>
+          <button id="btnResetear" class="ghost danger" title="Borrar datos locales (solo desarrollo)">Reset
+            local</button>
         </div>
       </div>
       <table id="tablaInventario">
@@ -192,60 +199,61 @@
     </section>
   </main>
 
-<!-- ===== Modal: Ingreso rápido (F2) — SIN escáner ===== -->
-<div id="modalIngreso" class="modal hidden" aria-hidden="true">
-  <div class="modal__dialog">
-    <div class="modal__header">
-      <h3>📥 Ingreso rápido manual</h3>
-      <button id="modalIngresoCerrar" class="ghost" title="Esc">✕</button>
-    </div>
+  <!-- ===== Modal: Ingreso rápido (F2) — SIN escáner ===== -->
+  <div id="modalIngreso" class="modal hidden" aria-hidden="true">
+    <div class="modal__dialog">
+      <div class="modal__header">
+        <h3>📥 Ingreso rápido manual</h3>
+        <button id="modalIngresoCerrar" class="ghost" title="Esc">✕</button>
+      </div>
 
-    <div class="modal__body">
-      <p class="muted">Selecciona un producto y registra entradas al inventario. El precio se define en el <b>Catálogo</b>.</p>
+      <div class="modal__body">
+        <p class="muted">Selecciona un producto y registra entradas al inventario. El precio se define en el
+          <b>Catálogo</b>.</p>
 
-      <div class="row">
-        <div class="field">
-          <label>Producto</label>
-          <select id="modalProducto"></select>
+        <div class="row">
+          <div class="field">
+            <label>Producto</label>
+            <select id="modalProducto"></select>
+          </div>
+
+          <div class="field">
+            <label>Modo</label>
+            <div class="segmented">
+              <label><input type="radio" name="modoIngreso" value="unidad" checked> Unidad</label>
+              <label><input type="radio" name="modoIngreso" value="lote"> Lote</label>
+            </div>
+          </div>
         </div>
 
-        <div class="field">
-          <label>Modo</label>
-          <div class="segmented">
-            <label><input type="radio" name="modoIngreso" value="unidad" checked> Unidad</label>
-            <label><input type="radio" name="modoIngreso" value="lote"> Lote</label>
+        <div class="row">
+          <div class="field" id="fieldCantidad">
+            <label>Cantidad</label>
+            <input id="modalCantidad" type="number" min="1" value="1" disabled>
+          </div>
+
+          <div class="field">
+            <label>Nota (opcional)</label>
+            <input id="modalNota" type="text" placeholder="Ej. Pedido proveedor, reposición…">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <button id="modalIngresoAgregar" class="primary">➕ Agregar al inventario</button>
+          </div>
+          <div class="field">
+            <label>Unidades capturadas en esta sesión</label>
+            <input id="modalIngresoContador" type="text" disabled value="0">
           </div>
         </div>
       </div>
 
-      <div class="row">
-        <div class="field" id="fieldCantidad">
-          <label>Cantidad</label>
-          <input id="modalCantidad" type="number" min="1" value="1" disabled>
-        </div>
-
-        <div class="field">
-          <label>Nota (opcional)</label>
-          <input id="modalNota" type="text" placeholder="Ej. Pedido proveedor, reposición…">
-        </div>
+      <div class="modal__footer">
+        <button id="modalIngresoTerminar" class="warn" title="Esc">Terminar ingreso (Esc)</button>
       </div>
-
-      <div class="row">
-        <div class="field">
-          <button id="modalIngresoAgregar" class="primary">➕ Agregar al inventario</button>
-        </div>
-        <div class="field">
-          <label>Unidades capturadas en esta sesión</label>
-          <input id="modalIngresoContador" type="text" disabled value="0">
-        </div>
-      </div>
-    </div>
-
-    <div class="modal__footer">
-      <button id="modalIngresoTerminar" class="warn" title="Esc">Terminar ingreso (Esc)</button>
     </div>
   </div>
-</div>
 
 
   <footer>
@@ -254,4 +262,5 @@
 
   <script src="app.js"></script>
 </body>
+
 </html>
