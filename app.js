@@ -195,7 +195,50 @@ function renderResumenVentasHoy(){
   document.getElementById("kpiVentasUnidades").textContent = String(unid);
   document.getElementById("kpiVentasTotal").textContent = formMXN(+total.toFixed(2));
 }
+/* ===== Resumen ventas TOTALES (todos los días) ===== */
+function ventasTotales() {
+  return STATE.movimientos.filter(m => m.tipo === "salida");
+}
 
+function renderResumenVentasTotales() {
+  const ventas = ventasTotales();
+  let unidTotal = 0, totalGeneral = 0;
+  
+  for(const v of ventas) {
+    const p = getProducto(v.productoId);
+    const precio = v.precioUnitario ?? Number(p?.precio || 0);
+    const sub = v.subtotal ?? +(precio * v.cantidadUnidades).toFixed(2);
+    
+    unidTotal += v.cantidadUnidades;
+    totalGeneral += sub;
+  }
+  
+  document.getElementById("kpiVentasTotalesUnidades").textContent = String(unidTotal);
+  document.getElementById("kpiVentasTotalesTotal").textContent = formMXN(+totalGeneral.toFixed(2));
+}
+
+function renderResumenVentasSemana() {
+  const fechaLimite = new Date();
+  fechaLimite.setDate(fechaLimite.getDate() - 7);
+  
+  const ventas = STATE.movimientos.filter(m => 
+    m.tipo === "salida" && new Date(m.fecha) >= fechaLimite
+  );
+  
+  let unidSemana = 0, totalSemana = 0;
+  
+  for(const v of ventas) {
+    const p = getProducto(v.productoId);
+    const precio = v.precioUnitario ?? Number(p?.precio || 0);
+    const sub = v.subtotal ?? +(precio * v.cantidadUnidades).toFixed(2);
+    
+    unidSemana += v.cantidadUnidades;
+    totalSemana += sub;
+  }
+  
+  document.getElementById("kpiVentasSemanaUnidades").textContent = String(unidSemana);
+  document.getElementById("kpiVentasSemanaTotal").textContent = formMXN(+totalSemana.toFixed(2));
+}
 /* ===== Núcleo movimientos ===== */
 function registrarMovimiento({ tipo, productoId, cantidadUnidades, nota }){
   if(!cantidadUnidades || cantidadUnidades<=0) return;
@@ -651,9 +694,13 @@ function init(){
   renderInventario();
   renderMovimientos();
   renderResumenVentasHoy();
+  renderResumenVentasSemana();    // ← Agregar esta línea
+  renderResumenVentasTotales();
   renderMosaicoVentas();
   renderOrderPanel();
   wireEvents();
+
 }
 
 document.addEventListener("DOMContentLoaded", init);
+  

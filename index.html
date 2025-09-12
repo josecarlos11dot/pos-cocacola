@@ -98,32 +98,42 @@
         Si no hay stock, el tile vibra.
       </p>
 
-      <!-- Resumen de ventas (hoy) -->
-      <div class="ventas-resumen">
-        <div class="kpi">
-          <div class="kpi-label">Artículos vendidos (hoy)</div>
-          <div class="kpi-value" id="kpiVentasUnidades">0</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Total vendido (hoy)</div>
-          <div class="kpi-value" id="kpiVentasTotal">$0.00</div>
-        </div>
+     
+<!-- Agregar esto después del resumen de ventas de hoy -->
+<!-- Resumen de ventas TOTALES -->
+<div class="ventas-resumen-totales" style="margin-top: 20px; border-top: 2px solid #e5e7eb; padding-top: 15px;">
+  <h3 style="margin-bottom: 10px; color: #1f2937;">📊 Estadísticas de ventas</h3>
+  
+  <!-- KPIs en fila -->
+  <div class="kpis-row" style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
+    <!-- Hoy -->
+    <div class="kpi kpi-hoy">
+      <div class="kpi-label">Hoy</div>
+      <div class="kpi-value">
+        <span id="kpiVentasUnidades">0</span> arts
       </div>
-
-      <table id="tablaVentasHoy" class="tabla-compacta">
-        <thead>
-          <tr>
-            <th>Hora</th>
-            <th>Producto</th>
-            <th>Unid.</th>
-            <th>Precio</th>
-            <th>Subtotal</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
-
+      <div class="kpi-money" id="kpiVentasTotal">$0.00</div>
+    </div>
+    
+    <!-- Últimos 7 días -->
+    <div class="kpi kpi-semana">
+      <div class="kpi-label">Últimos 7 días</div>
+      <div class="kpi-value">
+        <span id="kpiVentasSemanaUnidades">0</span> arts
+      </div>
+      <div class="kpi-money" id="kpiVentasSemanaTotal">$0.00</div>
+    </div>
+    
+    <!-- Total general -->
+    <div class="kpi kpi-total">
+      <div class="kpi-label">Total general</div>
+      <div class="kpi-value">
+        <span id="kpiVentasTotalesUnidades">0</span> arts
+      </div>
+      <div class="kpi-money" id="kpiVentasTotalesTotal">$0.00</div>
+    </div>
+  </div>
+</div>
     <!-- ===== 2) Catálogo ===== -->
     <section class="card" id="seccionCatalogo">
       <div class="header-line">
